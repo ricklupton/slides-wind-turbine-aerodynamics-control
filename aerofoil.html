@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+ svg {
+   font-family: sans-serif;
+ }
+
+ .chart div {
+   font: 10px sans-serif;
+   background-color: steelblue;
+   text-align: right;
+   padding: 3px;
+   margin: 1px;
+   color: white;
+ }
+
+ .aerofoil line {
+   stroke:steelblue;
+   stroke-width: 1;
+ }
+ .axis {
+   stroke: gray;
+ }
+
+ .wind path {
+   stroke: red;
+   marker-mid: url(#arrow);
+ }
+
+ .wind text {
+   fill: red;
+ }
+
+ .forces path {
+   stroke: blue;
+   stroke-width: 1px;
+   /* marker-end: url(#arrow); */
+ }
+
+ #resultant {
+   stroke-width: 3px;
+ }
+
+
+ .forces text {
+   /* font-size: 30px; */
+   dominant-baseline: central;
+   fill: blue;
+ }
+
+ .wind marker {
+   fill: red;
+ }
+
+ .chart-line {
+   stroke: grey;
+ }
+
+</style>
+
+<svg class="chart" width="900" height="400" viewbox="-300 -200 900 400">
+  <defs>
+    <marker id="arrow" viewBox="0 -5 10 10" refX="5"  refY="0" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
+      <path d="M0,-3L10,0L0,3"/>
+    </marker>
+  </defs>
+  <path class="axis" d="M-300,0 L300,0"/>
+  <path class="axis" d="M0,-200 L0,200"/>
+  <g class="aerofoil"">
+  <path
+    d="M 319.71714,70.19558 C 231.44443,57.210726 202.25354,38.973374 53.95443,49.275483 C 20.896429,51.571971 1.9214959,38.975072 0.87936948,29.905023 C -0.5027271,17.876075 16.088839,1.5178822 56.666295,0.84933325 C 128.98684,-0.34859352 214.56904,20.199402 319.71714,70.19558 z "
+    style="fill:#fc6;fill-opacity:1;fill-rule:evenodd;stroke:black;stroke-width:1.60000002;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.19999981;stroke-dasharray:none;stroke-opacity:1"
+    transform="scale(-1,1) translate(-80, -30)"
+    id="aerofoil" />
+  <line x1="-400" x2="400" y1="0" y2="0"/>
+  </g>
+</svg>
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+ var scale = 100
+ var wr = 2
+ var u = 1
+ var phi = Math.atan2(u, wr)
+
+ var svg = d3.select('svg')
+ var width = 600 // svg.attr('width')
+ var height = svg.attr('height')
+
+ var wind = svg.append('g')
+               .attr('class', 'wind')
+
+ wind.append('path').attr('id', 'wr')
+ wind.append('text')
+               .attr('text-anchor', 'middle')
+               .attr('dy', '-0.8em')
+               .append('textPath')
+               .attr('xlink:href', '#wr')
+               .attr('startOffset', '50%')
+               .text('wr')
+
+ wind.append('path').attr('id', 'u')
+ wind.append('text')
+               .attr('x', scale*wr)
+               .attr('y', scale*u/2)
+               .attr('text-anchor', 'end')
+               .attr('dy', '0.5em')
+               .attr('dx', '-0.5em')
+               .text('U')
+
+ wind.append('path').attr('id', 'res')
+
+ var uHandle = wind.append('circle')
+               .attr('id', 'u-handle')
+               .attr('r', 5)
+               .attr('cx', scale*wr)
+               .attr('cy', scale*u)
+
+ updateWindVectors()
+
+ function updateWindVectors() {
+   wind.select('#wr')
+       .attr('d', `M0,0 L${scale*wr/2},0 L${scale*wr},0`)
+   wind.select('#u')
+       .attr('d', `M${scale*wr},${scale*u} l0,${-scale*u/2} l0,${-scale*u/2}`)
+   wind.select('#res')
+       .attr('d', `M${scale*wr},${scale*u} L${scale*wr/2},${scale*u/2} L0,0`)
+   uHandle.attr('cy', scale*u)
+ }
+
+ var foil = d3.select('.aerofoil')
+
+ var forces = svg.append('g')
+                 .attr('class', 'forces')
+                 .attr('transform', `rotate(${phi * 180 / Math.PI})`)
+
+ forces.append('path')
+                 .attr('id', 'lift')
+                 .attr('d', ``)
+ forces
+                 .append('text')
+                 .attr('text-anchor', 'middle')
+                 .attr('dy', '-0.8em')
+                 .append('textPath')
+                 .attr('xlink:href', '#lift')
+                 .attr('startOffset', '50%')
+                 .text('Lift')
+
+ forces.append('path')
+                 .attr('id', 'drag')
+                 .attr('d', ``)
+ forces
+                 .append('text')
+                 .attr('text-anchor', 'middle')
+                 .attr('dy', '-0.8em')
+                 .append('textPath')
+                 .attr('xlink:href', '#drag')
+                 .attr('startOffset', '50%')
+                 .text('Drag')
+
+ forces.append('path')
+                 .attr('id', 'resultant')
+                 .attr('d', ``)
+ forces
+                 .append('text')
+                 .attr('text-anchor', 'middle')
+                 .style('font-size', '30px')
+                 .append('textPath')
+                 .attr('xlink:href', '#resultant')
+                 .attr('startOffset', '50%')
+                 .text('➤')
+
+
+ /* foil.attr('transform', 'translate(300, 200)') */
+
+ d3.json('oc3_aerofoil.json', function(json) {
+   console.log('data', json)
+
+   var CL = d3.scaleLinear()
+              .domain(json.map(d => d.alpha))
+              .range(json.map(d => d.CL))
+   var CD = d3.scaleLinear()
+              .domain(json.map(d => d.alpha))
+              .range(json.map(d => d.CD))
+
+   var charts = svg.append('g')
+                   .attr('transform', 'translate(300, -200)')
+   var CL_chart = charts.append('g')
+                     .attr('width', 300)
+                     .attr('height', 200)
+                     .attr('transform', 'translate(0, 0)')
+   var CD_chart = charts.append('g')
+                     .attr('width', 300)
+                     .attr('height', 200)
+                     .attr('transform', 'translate(0, 200)')
+   lineChart(CL_chart, json, 'CL');
+   var chartx = lineChart(CD_chart, json, 'CD');
+
+   var chartline = charts.append('line')
+                         .attr('class', 'chart-line')
+                         .attr('y1', 20)
+                         .attr('y2', 400 - 30)
+
+   var theta = phi
+   var drag = d3.drag().on("drag", function () {
+     theta = Math.atan2(d3.event.y - height / 2, d3.event.x - width / 2)
+     update()
+   })
+
+   var dragU = d3.drag().on('drag', function() {
+     u = d3.event.y / scale
+     phi = Math.atan2(u, wr)
+     updateWindVectors()
+     update()
+   })
+
+   function update() {
+     var alpha = phi - theta
+     if (alpha < -Math.PI) alpha += 2 * Math.PI
+
+     var FY = -100*CL(alpha)
+     var FX = -100*CD(alpha)
+     d3.select('#lift')
+       .attr('d', `M0,0 L0,${FY}`)
+     d3.select('#drag')
+       .attr('d', `M${FX},${FY} L0,${FY}`)
+     d3.select('#resultant')
+       .attr('d', `M0,0 L${FX},${FY}`)
+
+     foil.attr('transform', `rotate(${theta * 180 / Math.PI})`)
+
+     if (alpha > Math.PI) alpha -= 2 * Math.PI
+     if (alpha < -Math.PI) alpha += 2 * Math.PI
+     chartline.attr('transform', `translate(${50 + chartx(alpha * 180 / Math.PI)}, 0)`)
+   }
+
+   update()
+   svg.call(drag)
+   uHandle.call(dragU)
+ })
+
+ function lineChart(el, data, varname) {
+   var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = +el.attr("width") - margin.left - margin.right,
+    height = +el.attr("height") - margin.top - margin.bottom,
+    g = el.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+   var x = d3.scaleLinear()
+             .rangeRound([0, width])
+             .domain(d3.extent(data, function(d) { return d.alpha * 180 / Math.PI; }));
+
+   var y = d3.scaleLinear()
+             .rangeRound([height, 0])
+             .domain(d3.extent(data, function(d) { return d[varname]; }));
+
+   var line = d3.line()
+                .x(function(d) { return x(d.alpha * 180 / Math.PI); })
+                .y(function(d) { return y(d[varname]); });
+
+   g.append("g")
+    .attr("transform", "translate(0," + y(0) + ")")
+    .call(d3.axisBottom(x))
+   /* .select(".domain") */
+   /* .remove(); */
+
+   g.append("g")
+    .call(d3.axisLeft(y))
+    .append("text")
+    .attr("fill", "#000")
+      .attr("x", 20)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text(varname);
+
+   g.append("path")
+    .datum(data)
+    .attr("fill", "none")
+    .attr("stroke", "steelblue")
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-linecap", "round")
+    .attr("stroke-width", 1.5)
+    .attr("d", line);
+
+   return x;
+ }
+
+</script>
