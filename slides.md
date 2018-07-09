@@ -1,5 +1,7 @@
 ---
-theme: rick
+theme: none
+css:
+ - rick.css
 transition: none
 width: 1200
 ---
