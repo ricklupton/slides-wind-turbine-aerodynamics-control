@@ -1,39 +1,50 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
+ body {
+   background-color: #222;
+ }
+
+ /* path, line { */
+ /* stroke: #fff; */
+ /* } */
+
+ text {
+   fill: #fff;
+ }
 
  svg {
    font-family: sans-serif;
- }
-
- .chart div {
-   font: 10px sans-serif;
-   background-color: steelblue;
-   text-align: right;
-   padding: 3px;
-   margin: 1px;
-   color: white;
+   font-size: 25px;
  }
 
  .aerofoil line {
-   stroke:steelblue;
+   stroke: #2e6026;
    stroke-width: 1;
  }
+
+ .aerofoil path {
+   fill: #2e6026;
+   stroke: none;
+ }
+
  .axis {
    stroke: gray;
  }
 
  .wind path {
-   stroke: red;
+   stroke: #ff2c2d;
+   stroke-width: 3;
+   opacity: 0.5;
    marker-mid: url(#arrow);
  }
 
  .wind text {
-   fill: red;
+   fill: #ff2c2d;
  }
 
  .forces path {
-   stroke: blue;
+   stroke: #42affa;
    stroke-width: 1px;
    /* marker-end: url(#arrow); */
  }
@@ -46,14 +57,22 @@
  .forces text {
    /* font-size: 30px; */
    dominant-baseline: central;
-   fill: blue;
+   fill: #42affa;
  }
 
- .wind marker {
-   fill: red;
+ marker {
+   fill: #ff2c2d;
+ }
+
+ circle {
+   fill: #ff2c2d;
  }
 
  .chart-line {
+   stroke: grey;
+ }
+
+ .charts .axis path {
    stroke: grey;
  }
 
@@ -70,7 +89,6 @@
   <g class="aerofoil"">
   <path
     d="M 319.71714,70.19558 C 231.44443,57.210726 202.25354,38.973374 53.95443,49.275483 C 20.896429,51.571971 1.9214959,38.975072 0.87936948,29.905023 C -0.5027271,17.876075 16.088839,1.5178822 56.666295,0.84933325 C 128.98684,-0.34859352 214.56904,20.199402 319.71714,70.19558 z "
-    style="fill:#fc6;fill-opacity:1;fill-rule:evenodd;stroke:black;stroke-width:1.60000002;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.19999981;stroke-dasharray:none;stroke-opacity:1"
     transform="scale(-1,1) translate(-80, -30)"
     id="aerofoil" />
   <line x1="-400" x2="400" y1="0" y2="0"/>
@@ -102,12 +120,12 @@
                .text('wr')
 
  wind.append('path').attr('id', 'u')
- wind.append('text')
+ var uText = wind.append('text')
                .attr('x', scale*wr)
                .attr('y', scale*u/2)
-               .attr('text-anchor', 'end')
+               .attr('text-anchor', 'start')
                .attr('dy', '0.5em')
-               .attr('dx', '-0.5em')
+               .attr('dx', '0.5em')
                .text('U')
 
  wind.append('path').attr('id', 'res')
@@ -128,6 +146,7 @@
    wind.select('#res')
        .attr('d', `M${scale*wr},${scale*u} L${scale*wr/2},${scale*u/2} L0,0`)
    uHandle.attr('cy', scale*u)
+   uText.attr('y', scale*u/2)
  }
 
  var foil = d3.select('.aerofoil')
@@ -165,11 +184,11 @@
                  .attr('d', ``)
  forces
                  .append('text')
-                 .attr('text-anchor', 'middle')
+                 .attr('text-anchor', 'end')
                  .style('font-size', '30px')
                  .append('textPath')
                  .attr('xlink:href', '#resultant')
-                 .attr('startOffset', '50%')
+                 .attr('startOffset', '100%')
                  .text('➤')
 
 
@@ -186,6 +205,7 @@
               .range(json.map(d => d.CD))
 
    var charts = svg.append('g')
+                   .attr('class', 'charts')
                    .attr('transform', 'translate(300, -200)')
    var CL_chart = charts.append('g')
                      .attr('width', 300)
@@ -219,6 +239,8 @@
    function update() {
      var alpha = phi - theta
      if (alpha < -Math.PI) alpha += 2 * Math.PI
+
+     forces.attr('transform', `rotate(${phi * 180 / Math.PI})`)
 
      var FY = -100*CL(alpha)
      var FX = -100*CD(alpha)
@@ -260,12 +282,14 @@
                 .y(function(d) { return y(d[varname]); });
 
    g.append("g")
+    .attr('class', 'axis')
     .attr("transform", "translate(0," + y(0) + ")")
     .call(d3.axisBottom(x))
    /* .select(".domain") */
    /* .remove(); */
 
    g.append("g")
+    .attr('class', 'axis')
     .call(d3.axisLeft(y))
     .append("text")
     .attr("fill", "#000")
@@ -280,7 +304,7 @@
     .attr("stroke", "steelblue")
     .attr("stroke-linejoin", "round")
     .attr("stroke-linecap", "round")
-    .attr("stroke-width", 1.5)
+    .attr("stroke-width", 2)
     .attr("d", line);
 
    return x;
